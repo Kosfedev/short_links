@@ -13,8 +13,10 @@ import (
 )
 
 const (
-	baseURL        = "localhost:8081"
-	defaultTimeout = time.Second * 5
+	baseURL                = "localhost:8081"
+	createShortLinkPostfix = "/"
+	redirectPostfix        = "/{hash}"
+	defaultTimeout         = time.Second * 5
 )
 
 // RequestBody is...
@@ -36,8 +38,9 @@ func createLinkHashHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortLink := getShortLink(requestBody.Link)
-	links[requestBody.Link] = shortLink
+	hash := getStringHash(requestBody.Link)
+	shortLink := fmt.Sprintf("%s/%s", baseURL, hash)
+	links[hash] = requestBody.Link
 
 	responseBody := &ResponseBody{
 		Link: shortLink,
@@ -51,12 +54,6 @@ func createLinkHashHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func getShortLink(baseLink string) string {
-	hash := getStringHash(baseLink)
-
-	return fmt.Sprintf("%s/%s", baseLink, hash)
-}
-
 func getStringHash(str string) string {
 	h := sha1.New()
 	h.Write([]byte(str))
@@ -64,9 +61,20 @@ func getStringHash(str string) string {
 	return hex.EncodeToString(h.Sum(nil))[:7]
 }
 
+func hashRedirectHandler(w http.ResponseWriter, r *http.Request) {
+	hash := chi.URLParam(r, "hash")
+	originalLink, ok := links[hash]
+	if !ok {
+		http.NotFound(w, r)
+	}
+
+	http.Redirect(w, r, originalLink, http.StatusSeeOther)
+}
+
 func main() {
 	r := chi.NewRouter()
-	r.Post("/", createLinkHashHandler)
+	r.Post(createShortLinkPostfix, createLinkHashHandler)
+	r.Get(redirectPostfix, hashRedirectHandler)
 
 	server := http.Server{
 		Addr:         baseURL,
