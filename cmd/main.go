@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -55,7 +55,7 @@ func createLinkHashHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getStringHash(str string) string {
-	h := sha1.New()
+	h := sha256.New()
 	h.Write([]byte(str))
 
 	return hex.EncodeToString(h.Sum(nil))[:7]
