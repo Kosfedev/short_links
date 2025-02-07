@@ -66,6 +66,7 @@ func hashRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	originalLink, ok := links[hash]
 	if !ok {
 		http.NotFound(w, r)
+		return
 	}
 
 	http.Redirect(w, r, originalLink, http.StatusSeeOther)
